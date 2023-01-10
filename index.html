@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>Text Box</title>
+    <script src="vue.global.js"></script>
+    <link rel="stylesheet" href="w3.css">
+    <link rel="stylesheet" href="w3-colors-flat.css">
+  </head>
+  <body>
+    <div id="app" class="w3-container w3-padding-top">
+        <table id="list" class="w3-table w3-striped w3-border" width="100%">
+            <tr v-for="(item,index) in textlist">
+                <td>
+                    <div v-show="!item.editStatus" v-html="changeFormat(index)" style="width:95%; border-right: 1px solid gray; padding-right: 6px;"></div>
+                    <textarea v-show="item.editStatus" v-model="item.text" placeholder="请输入..." rows="6" style="width:95%;"></textarea>
+                </td>
+                <td width="20%">
+                    <button class="w3-btn w3-flat-wet-asphalt" @click="toggleEdit(index)">{{item.editStatus?"确定":"编辑"}}</button>
+                    <button class="w3-btn w3-flat-alizarin w3-margin-left" @click="DeleteOrCancel(index)">{{item.editStatus?"取消":"删除"}}</button>
+                </td>
+            </tr>
+        </table>
+        <button class="w3-btn w3-flat-peter-river w3-margin-top" @click="addText()">新建</button>
+    </div>
+
+    <script>
+        const { createApp } = Vue;
+        const fs = require('fs');
+
+        const app=createApp({
+            data(){
+                return{
+                    textlist:[],
+                    history:[]
+                }
+            },
+            computed:{
+                transformedText(index){
+                    return changeFormat(index);
+                }
+            },
+            mounted(){
+                const tl=require('./text-list.json').textList;
+                for(let item of tl){
+                    let ele={
+                    text:item,
+                    editStatus:false
+                    };
+                    this.textlist.push(ele);
+                }
+            },
+            methods:{
+                addText(){
+                    this.textlist.push(
+                        {
+                            text:"",
+                            editStatus:false
+                        }
+                    );
+                    this.toggleEdit(this.textlist.length-1);
+                },
+                toggleEdit(index){
+                    if(this.textlist[index].editStatus) this.saveTextToFile();
+                    this.textlist[index].editStatus=!this.textlist[index].editStatus;
+                    this.history[index]=this.textlist[index].text;
+                },
+                DeleteOrCancel(index){
+                    if(!this.textlist[index].editStatus){
+                        this.textlist.splice(index,1);
+                        this.saveTextToFile();
+                    }
+                    else{
+                        this.textlist[index].text=this.history[index];
+                        this.textlist[index].editStatus=!this.textlist[index].editStatus;
+                    }
+                },
+                changeFormat(index){
+                    text=this.textlist[index].text.replace(/\n/g,'<br/>');
+                    text=text.replace(/\s/g,'&nbsp;');
+                    return text;
+                },
+                saveTextToFile(){
+                    let tl=[];
+                    for(let item of this.textlist){
+                        tl.push(item.text);
+                    }
+                    let data={
+                        textList:tl
+                    }
+                    fs.writeFile("./resources/app/text-list.json",JSON.stringify(data),function(err){
+                        if(err){
+                            window.alert(err.toString());
+                        }
+                    })
+                }
+            }
+        }).mount('#app');
+    </script>
+  </body>
+</html>
